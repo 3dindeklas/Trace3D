@@ -1,0 +1,6 @@
+// IndexedDB supports reference images larger than localStorage's quota.
+export function createDraftStore(){let database;
+ async function open(){if(!globalThis.indexedDB)throw new Error('Storage unavailable');if(!database)database=new Promise((resolve,reject)=>{const request=indexedDB.open('trace3d-drafts',1);request.onupgradeneeded=()=>request.result.createObjectStore('drafts');request.onsuccess=()=>{request.result.onversionchange=()=>{request.result.close();database=null;};resolve(request.result);};request.onerror=()=>{database=null;reject(request.error);};request.onblocked=()=>{database=null;reject(new Error('Storage blocked'));};});return database;}
+ async function operation(mode,action){const db=await open();return new Promise((resolve,reject)=>{const transaction=db.transaction('drafts',mode),request=action(transaction.objectStore('drafts'));let result;request.onsuccess=()=>{result=request.result;};transaction.oncomplete=()=>resolve(result);transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error||new Error('Storage aborted'));});}
+ return {read:()=>operation('readonly',store=>store.get('current')),write:data=>operation('readwrite',store=>store.put(data,'current')),clear:()=>operation('readwrite',store=>store.delete('current'))};
+}

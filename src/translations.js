@@ -299,20 +299,10 @@ export const translations = {
     "de": "OBJ-Paket herunterladen",
     "fr": "Télécharger le paquet OBJ"
   },
-  "3MF downloaden": {
-    "en": "Download 3MF",
-    "de": "3MF herunterladen",
-    "fr": "Télécharger le 3MF"
-  },
   "STL bevat geen kleuren. Open het bestand in je slicer.": {
     "en": "STL has no colors. Open the file in your slicer.",
     "de": "STL enthält keine Farben. Öffne die Datei im Slicer.",
     "fr": "Le STL ne contient pas de couleurs. Ouvre le fichier dans ton slicer."
-  },
-  "Pak de ZIP uit en houd OBJ en MTL bij elkaar. Sommige slicers negeren OBJ-kleuren: gebruik dan 3MF.": {
-    "en": "Extract the ZIP and keep OBJ and MTL together. Some slicers ignore OBJ colors: use 3MF instead.",
-    "de": "Entpacke die ZIP und behalte OBJ und MTL zusammen. Manche Slicer ignorieren OBJ-Farben: verwende dann 3MF.",
-    "fr": "Décompresse le ZIP et garde OBJ et MTL ensemble. Certains slicers ignorent les couleurs OBJ : utilise alors le 3MF."
   },
   "Importeer als één object met meerdere onderdelen. Controleer de kleuren en wijs filamenten toe in Bambu Studio/Orca.": {
     "en": "Import as one object with multiple parts. Check colors and assign filaments in Bambu Studio/Orca.",
@@ -373,11 +363,6 @@ export const translations = {
     "en": "Export your design.",
     "de": "Exportiere deinen Entwurf.",
     "fr": "Exporte ton modèle."
-  },
-  "STL is een printbaar model zonder kleur. OBJ bevat kleurmaterialen. Kies 3MF voor aparte kleuronderdelen in je slicer en wijs daar filamenten toe.": {
-    "en": "STL is a printable model without color. OBJ contains color materials. Choose 3MF for separate color parts and assign filaments in your slicer.",
-    "de": "STL ist ein druckbares Modell ohne Farbe. OBJ enthält Farbmaterialien. Wähle 3MF für separate Farbteile und weise Filamente im Slicer zu.",
-    "fr": "Le STL est un modèle imprimable sans couleur. L’OBJ contient des matériaux colorés. Choisis le 3MF pour des pièces colorées séparées et attribue les filaments dans le slicer."
   },
   "Goed om te weten": {
     "en": "Good to know",
@@ -718,5 +703,155 @@ export const translations = {
     "en": "3dindeklas · Draw to 3D",
     "de": "3dindeklas · Zeichnen in 3D",
     "fr": "3dindeklas · Dessiner en 3D"
+  },
+  "Rechthoek": {
+    "en": "Rectangle",
+    "de": "Rechteck",
+    "fr": "Rectangle"
+  },
+  "Cirkel": {
+    "en": "Circle",
+    "de": "Kreis",
+    "fr": "Cercle"
+  },
+  "Rechte lijn": {
+    "en": "Straight line",
+    "de": "Gerade Linie",
+    "fr": "Ligne droite"
+  },
+  "Sleep een rechthoek. Houd Shift ingedrukt voor een vierkant.": {
+    "en": "Drag a rectangle. Hold Shift for a square.",
+    "de": "Ziehe ein Rechteck. Halte Shift für ein Quadrat.",
+    "fr": "Trace un rectangle. Maintiens Maj pour un carré."
+  },
+  "Sleep een cirkel of ellips. Houd Shift ingedrukt voor een cirkel.": {
+    "en": "Drag a circle or ellipse. Hold Shift for a circle.",
+    "de": "Ziehe einen Kreis oder eine Ellipse. Halte Shift für einen Kreis.",
+    "fr": "Trace un cercle ou une ellipse. Maintiens Maj pour un cercle."
+  },
+  "Sleep een rechte lijn. Eindpunten verbinden helpt om vormen te sluiten.": {
+    "en": "Drag a straight line. Connect endpoints to close shapes.",
+    "de": "Ziehe eine gerade Linie. Verbinde Endpunkte, um Formen zu schließen.",
+    "fr": "Trace une ligne droite. Relie les extrémités pour fermer les formes."
+  },
+  "Vormen vullen": {
+    "en": "Fill shapes",
+    "de": "Formen füllen",
+    "fr": "Remplir les formes"
+  },
+  "Eindpunten verbinden": {
+    "en": "Connect endpoints",
+    "de": "Endpunkte verbinden",
+    "fr": "Relier les extrémités"
+  },
+  "Sleep een vorm. Shift: vierkant, cirkel of rechte hoek.": {
+    "en": "Drag a shape. Shift: square, circle or angle snapping.",
+    "de": "Ziehe eine Form. Shift: Quadrat, Kreis oder Winkelraster.",
+    "fr": "Trace une forme. Maj : carré, cercle ou angle fixe."
+  },
+  "Lijn sluiten": {
+    "en": "Close line",
+    "de": "Linie schließen",
+    "fr": "Fermer le trait"
+  },
+  "Laag tonen": {
+    "en": "Show layer",
+    "de": "Ebene zeigen",
+    "fr": "Afficher le calque"
+  },
+  "Laag verbergen": {
+    "en": "Hide layer",
+    "de": "Ebene ausblenden",
+    "fr": "Masquer le calque"
+  },
+  "Laag ontgrendelen": {
+    "en": "Unlock layer",
+    "de": "Ebene entsperren",
+    "fr": "Déverrouiller le calque"
+  },
+  "Laag vergrendelen": {
+    "en": "Lock layer",
+    "de": "Ebene sperren",
+    "fr": "Verrouiller le calque"
+  },
+  "Laag naar voren": {
+    "en": "Move layer forward",
+    "de": "Ebene nach vorne",
+    "fr": "Avancer le calque"
+  },
+  "Laag naar achteren": {
+    "en": "Move layer backward",
+    "de": "Ebene nach hinten",
+    "fr": "Reculer le calque"
+  },
+  "Deze laag is vergrendeld. Ontgrendel hem om te bewerken.": {
+    "en": "This layer is locked. Unlock it to edit.",
+    "de": "Diese Ebene ist gesperrt. Entsperre sie zum Bearbeiten.",
+    "fr": "Ce calque est verrouillé. Déverrouille-le pour le modifier."
+  },
+  "Vink lagen aan om ze te groeperen. Gebruik oog, slot en pijlen voor zichtbaarheid, bescherming en volgorde. Verborgen lagen worden niet geëxporteerd.": {
+    "en": "Check layers to group them. Use the eye, lock and arrows for visibility, protection and order. Hidden layers are excluded from export.",
+    "de": "Markiere Ebenen zum Gruppieren. Auge, Schloss und Pfeile steuern Sichtbarkeit, Schutz und Reihenfolge. Verborgene Ebenen werden nicht exportiert.",
+    "fr": "Coche les calques à grouper. Utilise l’œil, le cadenas et les flèches pour la visibilité, la protection et l’ordre. Les calques masqués ne sont pas exportés."
+  },
+  "Automatische opslag op dit apparaat": {
+    "en": "Automatic saving on this device",
+    "de": "Automatisches Speichern auf diesem Gerät",
+    "fr": "Enregistrement automatique sur cet appareil"
+  },
+  "Opslaan…": {
+    "en": "Saving…",
+    "de": "Speichern…",
+    "fr": "Enregistrement…"
+  },
+  "Automatisch opgeslagen op dit apparaat": {
+    "en": "Automatically saved on this device",
+    "de": "Automatisch auf diesem Gerät gespeichert",
+    "fr": "Enregistré automatiquement sur cet appareil"
+  },
+  "Automatische opslag niet beschikbaar. Download je project.": {
+    "en": "Automatic saving unavailable. Download your project.",
+    "de": "Automatisches Speichern nicht verfügbar. Lade dein Projekt herunter.",
+    "fr": "Enregistrement automatique indisponible. Télécharge ton projet."
+  },
+  "Vorig ontwerp hersteld": {
+    "en": "Previous design restored",
+    "de": "Vorheriger Entwurf wiederhergestellt",
+    "fr": "Modèle précédent restauré"
+  },
+  "Je vorige ontwerp is automatisch hersteld.": {
+    "en": "Your previous design was automatically restored.",
+    "de": "Dein vorheriger Entwurf wurde automatisch wiederhergestellt.",
+    "fr": "Ton modèle précédent a été restauré automatiquement."
+  },
+  "Herstelbestand controleren vóór automatisch opslaan": {
+    "en": "Check recovery file before automatic saving",
+    "de": "Wiederherstellungsdatei vor automatischem Speichern prüfen",
+    "fr": "Vérifie le fichier de récupération avant l’enregistrement automatique"
+  },
+  "Het vorige herstelbestand kon niet worden geopend. Download een kopie voordat je het verwijdert.": {
+    "en": "The previous recovery file could not be opened. Download a copy before deleting it.",
+    "de": "Die vorherige Wiederherstellungsdatei konnte nicht geöffnet werden. Lade vor dem Löschen eine Kopie herunter.",
+    "fr": "Le fichier de récupération précédent n’a pas pu être ouvert. Télécharge une copie avant de le supprimer."
+  },
+  "Herstelbestand downloaden": {
+    "en": "Download recovery file",
+    "de": "Wiederherstellungsdatei herunterladen",
+    "fr": "Télécharger le fichier de récupération"
+  },
+  "Herstelbestand verwijderen": {
+    "en": "Delete recovery file",
+    "de": "Wiederherstellungsdatei löschen",
+    "fr": "Supprimer le fichier de récupération"
+  },
+  "Pak de ZIP uit en houd OBJ en MTL bij elkaar. Controleer de kleuren en wijs filamenten toe in je slicer.": {
+    "en": "Extract the ZIP and keep OBJ and MTL together. Check colors and assign filaments in your slicer.",
+    "de": "Entpacke die ZIP und behalte OBJ und MTL zusammen. Prüfe die Farben und weise Filamente im Slicer zu.",
+    "fr": "Décompresse le ZIP et garde OBJ et MTL ensemble. Vérifie les couleurs et attribue les filaments dans ton slicer."
+  },
+  "STL is een printbaar model zonder kleur. OBJ bevat kleurmaterialen. Wijs de gewenste filamenten toe in je slicer.": {
+    "en": "STL is a printable model without color. OBJ contains color materials. Assign the desired filaments in your slicer.",
+    "de": "STL ist ein druckbares Modell ohne Farbe. OBJ enthält Farbmaterialien. Weise die gewünschten Filamente im Slicer zu.",
+    "fr": "Le STL est un modèle imprimable sans couleur. L’OBJ contient des matériaux colorés. Attribue les filaments souhaités dans ton slicer."
   }
 };

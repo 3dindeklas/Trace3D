@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {visibleLayers,editableLayers,shapePolygons,snapPoint,canClose,reorderLayers} from '../src/editor.js';
+import {boundsOf,pointInside} from '../src/geometry.js';
+const layers=[{id:'a',groupId:'g',points:[[20,20],[80,80]]},{id:'b',groupId:'g'},{id:'c'},{id:'d',locked:true},{id:'e',visible:false}];
+assert.equal(visibleLayers(layers).length,4);assert.equal(editableLayers(layers).length,3);
+assert.deepEqual(reorderLayers(layers,'a',1).map(s=>s.id),['c','a','b','d','e']);assert.deepEqual(reorderLayers(layers,'c',-1).map(s=>s.id),['c','a','b','d','e']);assert.deepEqual(reorderLayers(layers,'d',-1),layers);
+assert.deepEqual(snapPoint([22,21,.5],layers,5).point,[20,20,.5]);assert.equal(snapPoint([22,21],layers.map(s=>({...s,locked:true})),5).target,null);assert.equal(canClose([[20,20],[21,21],[22,20]],8),false);assert.equal(canClose([[20,20],[120,20],[120,120]],8),true);
+const rect=shapePolygons('rectangle',[10,10],[100,70],8,true);assert.equal(boundsOf(rect).width,90);const square=shapePolygons('rectangle',[10,10],[100,70],8,true,true);assert.equal(boundsOf(square).width,boundsOf(square).height);
+const outline=shapePolygons('rectangle',[10,10],[100,70],8,false);assert.equal(pointInside(outline,50,40),false);assert.equal(pointInside(outline,12,12),true);
+const circle=shapePolygons('ellipse',[10,10],[100,70],8,true,true);assert.ok(Math.abs(boundsOf(circle).width-boundsOf(circle).height)<1e-6);assert.ok(shapePolygons('line',[10,10],[70,90],8).length);
+console.log('Layer protection/order, endpoint snapping, close eligibility and primitive geometry passed.');
