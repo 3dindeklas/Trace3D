@@ -1,3 +1,4 @@
+import Module from 'manifold-3d';
 import ClipperLib from 'clipper-lib';
 import { getStroke } from 'perfect-freehand';
 import * as THREE from 'three';
@@ -35,37 +36,45 @@ export function boundsOf(paths){let minX=Infinity,minY=Infinity,maxX=-Infinity,m
 export function regionsOf(tree){const regions=[];function walk(n){for(const child of n.Childs()){if(!child.IsHole()){regions.push({outer:floatPaths([child.Contour()])[0],holes:child.Childs().filter(c=>c.IsHole()).map(c=>floatPaths([c.Contour()])[0])});}walk(child);}}walk(tree);return regions;}
 export function visibleParts(shapes){let covered=[];const result=[];for(let i=shapes.length-1;i>=0;i--){const tree=booleanPaths(shapes[i].polygons,covered,'difference');if(tree.ChildCount())result.push({shape:shapes[i],regions:regionsOf(tree)});covered=flattenTree(booleanPaths([...covered,...shapes[i].polygons]));}return result;}
 function colorAt(shapes,x,y){for(let i=shapes.length-1;i>=0;i--)if(pointInside(shapes[i].polygons,x,y))return shapes[i].color;return shapes[0]?.color||'#4c325b';}
+let kernel;
+export async function initGeometry(){if(kernel)return;const options={};if(globalThis.__trace3dWasm)options.wasmBinary=Uint8Array.from(atob(globalThis.__trace3dWasm),c=>c.charCodeAt(0));else if(typeof window!=='undefined')options.locateFile=()=>new URL('/node_modules/manifold-3d/manifold.wasm',location.href).href;kernel=await Module(options);kernel.setup();}
+// Each layer rises from the print bed. Later layers own overlapping material;
+// taller earlier layers remain visible above a shorter later layer.
 export function modelData(shapes,width=80,thickness=3,colored=false){
- if(!shapes.length)return null;
- const paths=shapes.flatMap(s=>s.polygons),tree=booleanPaths(paths),regions=regionsOf(tree),union=flattenTree(tree);
- if(!regions.length)return null;
- const bounds=boundsOf(union),scale=width/bounds.width,cx=(bounds.minX+bounds.maxX)/2,cy=(bounds.minY+bounds.maxY)/2;
- const triangles=[],faceColors=[];
- const toWorld=p=>[(p[0]-cx)*scale,(cy-p[1])*scale];
- function triangle(a,b,c,color){const cross=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);if(a[2]===b[2]&&b[2]===c[2]&&Math.abs(cross)<1e-10)return;triangles.push([a,b,c]);faceColors.push(color);}
- function cap(region,z,up,color){
-   const rings=[region.outer,...region.holes].map(r=>r.map(toWorld));
-   const flat=rings.flat(),faces=THREE.ShapeUtils.triangulateShape(rings[0].map(p=>new THREE.Vector2(...p)),rings.slice(1).map(r=>r.map(p=>new THREE.Vector2(...p))));
-   for(const ids of faces){let [a,b,c]=ids.map(i=>[...flat[i],z]);const cross=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);if((cross>0)!==up)[b,c]=[c,b];const x=cx+(a[0]+b[0]+c[0])/3/scale,y=cy-(a[1]+b[1]+c[1])/3/scale;triangle(a,b,c,color||colorAt(shapes,x,y));}
- }
- const tops=[{regions,shape:{color:null}}];
- for(const part of tops)for(const region of part.regions)cap(region,thickness,true,part.shape.color);
- for(const region of regions){cap(region,0,false,null);for(const [idx,ring] of [region.outer,...region.holes].entries()){
-   let world=ring.map(toWorld);if((signedArea(world)>0)!==(idx===0))world.reverse();
-   for(let i=0;i<world.length;i++){const a=world[i],b=world[(i+1)%world.length],x=cx+(a[0]+b[0])/2/scale,y=cy-(a[1]+b[1])/2/scale;const color=colorAt(shapes,x,y);
-    triangle([...a,0],[...b,0],[...b,thickness],color);triangle([...a,0],[...b,thickness],[...a,thickness],color);
-   }
- }}
- return {triangles,faceColors,width,height:bounds.height*scale,thickness,bounds,scale,islands:regions.length};
+ if(!shapes.length)return null;if(!kernel)throw new Error('Geometry is not initialized');
+ const tree=booleanPaths(shapes.flatMap(s=>s.polygons)),paths=flattenTree(tree),regions=regionsOf(tree);if(!regions.length)return null;
+ const bounds=boundsOf(paths),scale=width/bounds.width,cx=(bounds.minX+bounds.maxX)/2,cy=(bounds.minY+bounds.maxY)/2;
+ const solids=[],parts=[];let covered;
+ const meshData=(solid,color)=>{const mesh=solid.getMesh(),triangles=[];for(let i=0;i<mesh.triVerts.length;i+=3)triangles.push([0,1,2].map(j=>{const offset=mesh.triVerts[i+j]*mesh.numProp;return Array.from(mesh.vertProperties.slice(offset,offset+3));}));return {triangles,faceColors:triangles.map(()=>color)};};
+ try{
+  for(const s of shapes){const cross=new kernel.CrossSection(s.polygons.map(r=>r.map(([x,y])=>[(x-cx)*scale,(cy-y)*scale])),'NonZero');try{solids.push(cross.extrude(s.height??thickness));}finally{cross.delete();}}
+  for(let i=shapes.length-1;i>=0;i--){const visible=covered?solids[i].subtract(covered):solids[i];try{if(!visible.isEmpty()){if(visible.status()!=='NoError')throw new Error('Invalid material volume');parts.push({...meshData(visible,shapes[i].color),color:shapes[i].color,name:shapes[i].name||'Layer',layerId:shapes[i].id});}}finally{if(covered)visible.delete();}
+   const next=covered?kernel.Manifold.union([solids[i],covered]):solids[i].translate([0,0,0]);if(covered)covered.delete();covered=next;
+  }
+  if(covered.status()!=='NoError')throw new Error('Invalid solid');
+  return {...meshData(covered,shapes[0].color),parts,width,height:bounds.height*scale,thickness:Math.max(...shapes.map(s=>s.height??thickness)),bounds,scale,islands:regions.length};
+ }finally{covered?.delete();for(const solid of solids)solid.delete();}
 }
-export function bufferGeometry(data){const positions=[],colors=[],uv=[];for(let i=0;i<data.triangles.length;i++){const color=new THREE.Color(data.faceColors[i]);for(const p of data.triangles[i]){positions.push(...p);colors.push(color.r,color.g,color.b);uv.push((p[0]/data.scale+(data.bounds.minX+data.bounds.maxX)/2)/SIZE,1-((data.bounds.minY+data.bounds.maxY)/2-p[1]/data.scale)/SIZE);}}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));for(let i=0;i<data.triangles.length;i++)geometry.addGroup(i*3,3,data.triangles[i].every(p=>p[2]===data.thickness)?0:1);geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry;}
+export function bufferGeometry(data){const positions=[],colors=[];const triangles=data.parts?.flatMap(p=>p.triangles)||data.triangles,faceColors=data.parts?.flatMap(p=>p.faceColors)||data.faceColors;for(let i=0;i<triangles.length;i++){const color=new THREE.Color(faceColors[i]);for(const p of triangles[i]){positions.push(...p);colors.push(color.r,color.g,color.b);}}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();geometry.computeBoundingSphere();return geometry;}
 export function binarySTL(data){const bytes=new ArrayBuffer(84+data.triangles.length*50),v=new DataView(bytes);const header=new TextEncoder().encode('3dindeklas Trace3D - units: millimeters');new Uint8Array(bytes).set(header);v.setUint32(80,data.triangles.length,true);let offset=84;
  for(const tri of data.triangles){const [a,b,c]=tri,normal=new THREE.Vector3().subVectors(new THREE.Vector3(...b),new THREE.Vector3(...a)).cross(new THREE.Vector3().subVectors(new THREE.Vector3(...c),new THREE.Vector3(...a))).normalize();for(const p of [[normal.x,normal.y,normal.z],...tri])for(const n of p){v.setFloat32(offset,n,true);offset+=4;}v.setUint16(offset,0,true);offset+=2;}return bytes;}
-export function objFiles(data,name,textureFile=null){const vertices=[],indices=[],map=new Map();for(const tri of data.triangles){indices.push(tri.map(p=>{const key=p.map(n=>n.toFixed(6)).join(',');if(!map.has(key)){map.set(key,vertices.length+1);vertices.push(p);}return map.get(key);}));}
- const palette=[...new Set(data.faceColors)],materials=new Map(palette.map((c,i)=>[c,`kleur_${i+1}`]));
- let obj=`# 3dindeklas Trace3D\n# Coordinates in millimeters; set import units to mm.\nmtllib ${name}.mtl\no ${name}\n`;
- obj+=vertices.map(p=>`v ${p.map(n=>n.toFixed(6)).join(' ')}`).join('\n')+'\n';if(textureFile)obj+=vertices.map(p=>`vt ${((p[0]/data.scale+(data.bounds.minX+data.bounds.maxX)/2)/SIZE).toFixed(8)} ${(1-((data.bounds.minY+data.bounds.maxY)/2-p[1]/data.scale)/SIZE).toFixed(8)}`).join('\n')+'\n';let current=null;for(let i=0;i<indices.length;i++){const material=textureFile&&data.triangles[i].every(p=>p[2]===data.thickness)?'tekening':materials.get(data.faceColors[i]);if(material!==current){obj+=`usemtl ${material}\n`;current=material;}obj+=`f ${indices[i].map(index=>textureFile?`${index}/${index}`:index).join(' ')}\n`;}
- const mtl=(textureFile?`newmtl tekening\nKd 1 1 1\nmap_Kd ${textureFile}\nd 1\nillum 2\n\n`:'')+palette.map(c=>{const rgb=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)/255);return `newmtl ${materials.get(c)}\nKa 0.1 0.1 0.1\nKd ${rgb.map(n=>n.toFixed(5)).join(' ')}\nKs 0.1 0.1 0.1\nd 1\nillum 2\n`;}).join('\n');return {obj,mtl};}
+const xmlEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+export function objFiles(data,name){
+ const parts=data.parts||[{triangles:data.triangles,color:data.faceColors[0],name}],palette=[...new Set(parts.map(p=>p.color))],materials=new Map(palette.map((c,i)=>[c,`color_${i+1}`]));
+ let obj=`# Trace3D - millimeters; companion MTL must remain beside this OBJ.\nmtllib ${name}.mtl\n`,offset=0;
+ for(const [i,part] of parts.entries()){const vertices=[],indices=[],map=new Map();for(const tri of part.triangles)indices.push(tri.map(p=>{const key=p.map(n=>n.toFixed(6)).join(',');if(!map.has(key)){map.set(key,vertices.length+1);vertices.push(p);}return map.get(key)+offset;}));
+ const rgb=[1,3,5].map(n=>parseInt(part.color.slice(n,n+2),16)/255);obj+=`o layer_${i+1}\ng layer_${i+1}\nusemtl ${materials.get(part.color)}\n`;obj+=vertices.map(p=>`v ${[...p,...rgb].map(n=>n.toFixed(6)).join(' ')}`).join('\n')+'\n';obj+=indices.map(f=>`f ${f.join(' ')}`).join('\n')+'\n';offset+=vertices.length;}
+ const mtl=palette.map(c=>`newmtl ${materials.get(c)}\nKa 0 0 0\nKd ${[1,3,5].map(i=>(parseInt(c.slice(i,i+2),16)/255).toFixed(6)).join(' ')}\nKs 0 0 0\nd 1\nillum 1\n`).join('\n');return {obj,mtl};
+}
+// 3MF core + Materials Extension: color volumes are components of one assembly.
+export function threeMFEntries(data,name){
+ const parts=data.parts,palette=[...new Set(parts.map(p=>p.color))];let objects='';
+ for(const [i,part] of parts.entries()){const vertices=[],indices=[],map=new Map();for(const tri of part.triangles)indices.push(tri.map(p=>{const key=p.map(n=>n.toFixed(6)).join(',');if(!map.has(key)){map.set(key,vertices.length);vertices.push(p);}return map.get(key);}));objects+=`<object id="${i+2}" type="model" name="${xmlEscape(part.name)}" pid="1" pindex="${palette.indexOf(part.color)}"><mesh><vertices>${vertices.map(p=>`<vertex x="${p[0]}" y="${p[1]}" z="${p[2]}"/>`).join('')}</vertices><triangles>${indices.map(f=>`<triangle v1="${f[0]}" v2="${f[1]}" v3="${f[2]}"/>`).join('')}</triangles></mesh></object>`;}
+ const assembly=parts.length+2;
+ return {'[Content_Types].xml':'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>',
+ '_rels/.rels':'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>',
+ '3D/3dmodel.model':`<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="en-US" xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" requiredextensions="m" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><metadata name="Title">${xmlEscape(name)}</metadata><resources><m:colorgroup id="1">${palette.map(c=>`<m:color color="${c.toUpperCase()}FF"/>`).join('')}</m:colorgroup>${objects}<object id="${assembly}" type="model" name="${xmlEscape(name)}"><components>${parts.map((_,i)=>`<component objectid="${i+2}"/>`).join('')}</components></object></resources><build><item objectid="${assembly}"/></build></model>`};
+}
 // Trace a four-connected raster region into vector contours. Only drawing alpha forms walls.
 export function floodContours(alpha,resolution,startX,startY){const W=resolution,x=Math.floor(startX),y=Math.floor(startY);if(x<0||y<0||x>=W||y>=W||alpha[y*W+x]>70)return null;
  const seen=new Uint8Array(W*W),queue=new Int32Array(W*W);let head=0,tail=1;queue[0]=y*W+x;seen[queue[0]]=1;let reachesEdge=false;
