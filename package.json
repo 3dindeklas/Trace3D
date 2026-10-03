@@ -1,6 +1,6 @@
 {
   "name": "3dindeklas-trace3d",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Trace images and export printable 3D models",
   "main": "index.js",
   "directories": {
@@ -9,9 +9,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173 --open /app.html",
     "build": "node scripts/build.mjs",
-    "test": "node tests/geometry.test.mjs && node tests/i18n.test.mjs",
+    "test": "node tests/geometry.test.mjs && node tests/i18n.test.mjs && node tests/editor.test.mjs",
     "start": "vite --host 0.0.0.0 --port 4173 --open /app.html",
-    "test:browser": "node tests/browser.test.mjs"
+    "test:browser": "node tests/browser.test.mjs && node tests/editor-browser.test.mjs"
   },
   "keywords": [],
   "author": "",
