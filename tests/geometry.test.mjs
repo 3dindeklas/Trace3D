@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { modelData,binarySTL,objFiles,normalizePaths,strokePolygons,floodContours } from '../src/geometry.js';
+import { initGeometry,modelData,binarySTL,objFiles,threeMFEntries,bufferGeometry,normalizePaths,strokePolygons,floodContours } from '../src/geometry.js';
+await initGeometry();
 const shape=(polygons,color='#4c325b')=>({id:'test',type:'fill',color,polygons});
 const rect=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
 function inspect(data){const edges=new Map();let volume=0;for(const [a,b,c] of data.triangles){volume+=(a[0]*(b[1]*c[2]-b[2]*c[1])+a[1]*(b[2]*c[0]-b[0]*c[2])+a[2]*(b[0]*c[1]-b[1]*c[0]))/6;for(const [p,q] of [[a,b],[b,c],[c,a]]){const keys=[p,q].map(p=>p.map(n=>n.toFixed(6)).join(','));const edge=[...keys].sort().join('|');const current=edges.get(edge)||{count:0,direction:0};current.count++;current.direction+=keys[0]<keys[1]?1:-1;edges.set(edge,current);}}
@@ -12,10 +13,16 @@ const disconnected=modelData([shape([rect(0,0,20,20)]),shape([rect(40,0,20,20)])
 const crossing=[shape(strokePolygons([[10,10,.5],[90,90,.5]],'pen',10)),shape(strokePolygons([[10,90,.5],[90,10,.5]],'pen',10))];assert.equal(inspect(modelData(crossing,80,3)).bad,0);
 const dot=modelData([shape(strokePolygons([[30,30,.5]],'pencil',10))],20,2);assert.ok(dot);assert.equal(inspect(dot).bad,0);
 const crossingStress=[];for(let i=0;i<8;i++)crossingStress.push(shape(strokePolygons([[50,100+i*60,.5],[750,700-i*60,.5]],'pen',15),i%2?'#5ab3b1':'#4c325b'));assert.equal(inspect(modelData(crossingStress,80,3,true)).bad,0);
+for(const part of modelData(crossingStress,80,3,true).parts)assert.equal(inspect(part).bad,0);
 const binary=binarySTL(hole);assert.equal(binary.byteLength,84+hole.triangles.length*50);assert.equal(new DataView(binary).getUint32(80,true),hole.triangles.length);
 const offsetOverlap=modelData([shape([rect(0,0,100,100)]),shape([rect(50,30,100,100)],'#5ab3b1')],100,3,true);assert.equal(inspect(offsetOverlap).bad,0);
 const colorCrossing=modelData(crossing.map((s,i)=>({...s,color:i?'#5ab3b1':'#4c325b'})),80,3,true);assert.equal(inspect(colorCrossing).bad,0);
-const colored=modelData([shape([rect(0,0,100,100)]),shape([rect(25,25,50,50)],'#5ab3b1')],100,3,true);const obj=objFiles(colored,'test');assert.ok(obj.obj.includes('mtllib test.mtl'));const textured=objFiles(colored,'test','test-kleuren.png');assert.ok(textured.obj.includes('vt '));assert.ok(textured.obj.includes('usemtl tekening'));assert.ok(textured.mtl.includes('map_Kd test-kleuren.png'));assert.equal((obj.mtl.match(/newmtl/g)||[]).length,2);
+const colored=modelData([shape([rect(0,0,100,100)]),shape([rect(25,25,50,50)],'#5ab3b1')],100,3,true);const obj=objFiles(colored,'test');assert.ok(obj.obj.includes('mtllib test.mtl'));assert.ok(obj.obj.includes('usemtl color_1'));assert.ok(obj.obj.includes('usemtl color_2'));assert.equal((obj.mtl.match(/newmtl/g)||[]).length,2);assert.equal(colored.parts.length,2);for(const part of colored.parts)assert.equal(inspect(part).bad,0);
+const relief=modelData([{...shape([rect(0,0,100,100)]),height:2},{...shape([rect(25,25,50,50)],'#5ab3b1'),height:5}],100,3,true);assert.equal(relief.thickness,5);assert.equal(inspect(relief).bad,0);assert.ok(Math.abs(inspect(relief).volume-27500)<1e-6);for(const part of relief.parts)assert.equal(inspect(part).bad,0);
+const offsetRelief=modelData([{...shape([rect(0,0,100,100)]),height:2},{...shape([rect(50,30,100,100)],'#5ab3b1'),height:5}],150,3,true);assert.equal(inspect(offsetRelief).bad,0);for(const part of offsetRelief.parts)assert.equal(inspect(part).bad,0);
+const entries=threeMFEntries(relief,'Test <&>');assert.deepEqual(Object.keys(entries),['[Content_Types].xml','_rels/.rels','3D/3dmodel.model']);assert.ok(entries['3D/3dmodel.model'].includes('m:colorgroup'));assert.ok(entries['3D/3dmodel.model'].includes('#5AB3B1FF'));assert.ok(entries['3D/3dmodel.model'].includes('Test &lt;&amp;&gt;'));assert.equal((entries['3D/3dmodel.model'].match(/<component objectid/g)||[]).length,relief.parts.length);
+const preview=bufferGeometry(colored);assert.equal(preview.attributes.position.count,colored.parts.reduce((n,p)=>n+p.triangles.length*3,0));assert.equal(preview.attributes.color.count,preview.attributes.position.count);preview.dispose();
+const stressRelief=modelData(crossingStress.map((s,i)=>({...s,height:2+i*.4})),80,3,true);assert.equal(inspect(stressRelief).bad,0);for(const part of stressRelief.parts)assert.equal(inspect(part).bad,0);
 const res=40,alpha=new Uint8Array(res*res);for(let y=10;y<=30;y++)for(let x=10;x<=30;x++)if(x===10||x===30||y===10||y===30)alpha[y*res+x]=255;assert.ok(floodContours(alpha,res,20,20)?.length);assert.equal(floodContours(alpha,res,0,0),null);alpha[10*res+20]=0;assert.equal(floodContours(alpha,res,20,20),null);
 assert.equal(modelData([],80,3),null);
 fs.mkdirSync('tests/output',{recursive:true});fs.writeFileSync('tests/output/hole.stl',Buffer.from(binary));fs.writeFileSync('tests/output/colored.obj',obj.obj);fs.writeFileSync('tests/output/colored.mtl',obj.mtl);fs.writeFileSync('tests/output/colored.stl',Buffer.from(binarySTL(colored)));

@@ -2,11 +2,12 @@ name: Build and publish Trace3D
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: pages
+  group: trace3d-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
@@ -20,10 +21,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
   deploy:
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:

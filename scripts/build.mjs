@@ -1,9 +1,10 @@
 import { build } from 'esbuild';
 import fs from 'node:fs/promises';
 await fs.mkdir('dist',{recursive:true});
-const result=await build({entryPoints:['src/app.js'],bundle:true,minify:true,format:'iife',target:['es2020'],write:false,legalComments:'inline'});
+const result=await build({entryPoints:['src/app.js'],bundle:true,minify:true,external:['node:*'],format:'iife',target:['es2020'],write:false,legalComments:'inline',plugins:[{name:'manifold-browser',setup(b){b.onLoad({filter:/manifold-3d\/manifold\.js$/},async args=>({contents:(await fs.readFile(args.path,'utf8')).replace('globalThis.process?.versions?.node&&globalThis.process?.type!="renderer"','false').replaceAll('import.meta.url','location.href'),loader:'js'}));}}]});
 let css=await fs.readFile('src/style.css','utf8');const font=await fs.readFile('assets/quicksand-600.ttf');css=css.replace("../assets/quicksand-600.ttf",'data:font/ttf;base64,'+font.toString('base64'));
-let html=await fs.readFile('app.html','utf8');html=html.replace('<link rel="stylesheet" href="./src/style.css">',`<style>${css}</style>`).replace('./assets/logo.png','data:image/png;base64,'+(await fs.readFile('assets/logo.png')).toString('base64')).replace('<script type="module" src="./src/app.js"></script>',()=>`<script>${result.outputFiles[0].text.replaceAll('</script','<\\/script')}</script>`);
+const wasm=(await fs.readFile('node_modules/manifold-3d/manifold.wasm')).toString('base64');
+let html=await fs.readFile('app.html','utf8');html=html.replace('<link rel="stylesheet" href="./src/style.css">',`<style>${css}</style>`).replace('./assets/logo.png','data:image/png;base64,'+(await fs.readFile('assets/logo.png')).toString('base64')).replace('<script type="module" src="./src/app.js"></script>',()=>`<script>globalThis.__trace3dWasm="${wasm}";${result.outputFiles[0].text.replaceAll('</script','<\\/script')}</script>`);
 const licenses=(await fs.readFile('THIRD-PARTY-LICENSES.txt','utf8'))+'\n\nQuicksand\n'+(await fs.readFile('assets/OFL.txt','utf8'));
 html=html.replace('</body>',()=>`<script type="application/json" id="third-party-licenses">${JSON.stringify(licenses).replaceAll('</script','<\\/script')}</script></body>`);
 await fs.writeFile('dist/index.html',html);
