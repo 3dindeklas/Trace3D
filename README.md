@@ -4,9 +4,9 @@ Een browsertool om een afbeelding over te trekken en de tekening als een plat 3D
 
 ## Gebruiken
 
-Open `dist/index.html` of de meegeleverde `Teken-naar-3D.html` in een recente browser. Het gebouwde bestand bevat alle code, fonts en het logo en werkt ook zonder internet.
+Open `index.html`, `dist/index.html` of de meegeleverde `Teken-naar-3D.html` in een recente browser. Het gebouwde bestand bevat alle code, fonts en het logo en werkt ook zonder internet.
 
-1. Kies **Nieuw** om een leeg ontwerp te beginnen, of pas het voorbeeld aan.
+1. Kies **Nieuw** om een leeg ontwerp te beginnen, of klik op **Voorbeeld** voor een sterhanger die direct ook in 3D verschijnt.
 2. Laad een PNG, JPG, WebP, GIF of BMP in. De afbeelding is alleen een overtrekvoorbeeld en wordt niet meegeprint.
 3. Teken met pen, stift of potlood. Een stylus geeft bij potlood drukgevoelige lijnen. Met muis en touch wordt de druk gesimuleerd. De tools maken gesloten vectorcontouren; potlood gebruikt een gladde contour in plaats van een korrelige textuur, zodat het printbaar blijft.
 4. Kies **Vullen** en klik binnen een gesloten ruimte. Klik op een bestaande vorm om deze opnieuw te kleuren.
@@ -20,7 +20,7 @@ De tekening en foto worden lokaal verwerkt. Geen accounts, uploads naar een serv
 ## Navigatie
 
 - Muis, touch en stylus: tekenen.
-- Twee vingers: zoomen en het canvas verplaatsen.
+- Twee vingers: zoomen en het canvas verplaatsen. Op iPhone/iPad wordt vingerinvoer rechtstreeks via Touch Events verwerkt; muis en stylus gebruiken Pointer Events.
 - Muiswiel of `+` / `−`: zoomen. Klik op het percentage om de weergave terug te zetten.
 - Spatie + slepen, of de middelste muisknop: canvas verplaatsen.
 - Ctrl/⌘+Z: ongedaan maken. Ctrl/⌘+Shift+Z: opnieuw.
@@ -49,13 +49,16 @@ npm test
 npm run build
 ```
 
-`npm run build` maakt een zelfstandige HTML-app in `dist/index.html`. Geen externe CDN-verzoeken. De afhankelijkheden en exacte versies staan in `package-lock.json`.
+Gebruik bij ontwikkeling `http://localhost:4173/app.html`; dit laadt de broncode via Vite.
+
+`npm run build` maakt een zelfstandige HTML-app in `dist/index.html` en werkt ook `index.html` in de repository bij. Commit de bijgewerkte `index.html` mee, zodat Pages met publiceren vanaf de branch eveneens de volledige app serveert. Geen externe CDN-verzoeken. De afhankelijkheden en exacte versies staan in `package-lock.json`.
 
 ### Structuur
 
 - `src/app.js`: invoer, tekenwerkplek, onderdelen, historie, projecten en 3D-voorbeeld.
 - `src/geometry.js`: vectorcontouren, booleaanse samenvoeging, vullen, extrusie en exports.
 - `src/style.css`: huisstijl en responsive indeling.
+- `app.html`: HTML-sjabloon voor ontwikkeling; `index.html` is de gebouwde app.
 - `scripts/build.mjs`: bundelen en alle assets in één HTML-bestand opnemen.
 - `tests/geometry.test.mjs`: maatvoering, gesloten mesh, positieve volumes, gaten, overlap, losse vormen, lijnen, materiaal- en textuurcoördinatenexport en begrensd vullen.
 

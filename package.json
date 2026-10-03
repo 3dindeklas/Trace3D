@@ -7,10 +7,10 @@
     "test": "tests"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 4173",
+    "dev": "vite --host 0.0.0.0 --port 4173 --open /app.html",
     "build": "node scripts/build.mjs",
     "test": "node tests/geometry.test.mjs",
-    "start": "vite --host 0.0.0.0 --port 4173"
+    "start": "vite --host 0.0.0.0 --port 4173 --open /app.html"
   },
   "keywords": [],
   "author": "",
